@@ -1,14 +1,11 @@
 class Player
   def play_turn(warrior)
-    if should_retreat?(warrior, @health)
-      @direction = :backward 
-    end
+    direction = best_direction(warrior)
     space = warrior.feel(direction)
+
     if space.wall?
-      toggle_direction!
-      space = warrior.feel(direction)
-    end
-    if space.captive?
+      warrior.pivot!
+    elsif space.captive?
       warrior.rescue!(direction)
     elsif space.enemy?
       warrior.attack!(direction)
@@ -17,18 +14,20 @@ class Player
     else
       warrior.walk!(direction)
     end
+
+    remember_health(warrior)
+
+  end
+
+  def remember_health(warrior)
     @health = warrior.health
   end
 
-  def direction
-    @direction ||= :backward
-  end
-
-  def toggle_direction!
-    if @direction == :forward
-      @direction = :backward
-    else
-      @direction = :forward
+  def best_direction(warrior)
+    if should_retreat?(warrior, @health)
+      :backward
+    else 
+      :forward
     end
   end
 
