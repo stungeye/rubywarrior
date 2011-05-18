@@ -2,27 +2,40 @@ class Player
   def play_turn(warrior)
     direction = best_direction(warrior)
     space = warrior.feel(direction)
-    spaces = warrior.look(direction)
-
-    if should_pivot?(spaces)
-      warrior.pivot!
-    elsif should_range_attack?(spaces)
-      warrior.shoot!
-    elsif space.captive?
-      warrior.rescue!(direction)
-    elsif space.enemy?
-      warrior.attack!(direction)
-    elsif should_rest?(warrior, @health)      
-      warrior.rest!
+    if direction == :forward
+      spaces = warrior.look(:forward)
+      backspaces = warrior.look(:backward)
     else
-      warrior.walk!(direction)
+      spaces = warrior.look(:backward)
+      backspaces = warrior.look(:forward)
+    end
+
+    
+    if should_pivot?(spaces, backspaces)
+      warrior.pivot!
+      @pivoted = true
+      @engaged = false
+    else
+      @pivoted = false
+      @engaged = false
+      if should_range_attack?(spaces)
+        warrior.shoot!
+        @engaged = true
+      elsif space.captive?
+        warrior.rescue!(direction)
+      elsif space.enemy?
+        warrior.attack!(direction)
+        @engaged = true
+      elsif should_rest?(warrior, @health)      
+        warrior.rest!
+      else
+        warrior.walk!(direction)
+      end
     end
 
     remember_health(warrior)
 
   end
-
-
 
   def remember_health(warrior)
     @health = warrior.health
@@ -36,8 +49,8 @@ class Player
     end
   end
 
-  def should_pivot?(spaces)
-    spaces[0].wall?
+  def should_pivot?(spaces, backspaces)
+    spaces[0].wall? || (should_range_attack?(backspaces) && !@pivoted && !@engaged)
   end
 
   def should_range_attack?(spaces)
