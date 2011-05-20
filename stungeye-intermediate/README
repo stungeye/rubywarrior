@@ -1,18 +1,19 @@
-Level 2
+Level 3
 
-Another large room, but with several enemies blocking your way to the stairs.
+You feel slime on all sides, you're surrounded!
 
-Tip: Just like walking, you can attack! and feel in multiple directions (:forward, :left, :right, :backward).
+Tip: Call warrior.bind!(direction) to bind an enemy to keep him from attacking. Bound enemies look like capitves.
 
- ----
-|@s  |
-| sS>|
- ----
+ ---
+|>s |
+|s@s|
+| C |
+ ---
 
   > = Stairs
   @ = stungeye (20 HP)
   s = Sludge (12 HP)
-  S = Thick Sludge (24 HP)
+  C = Captive (1 HP)
 
 
 Warrior Abilities:
@@ -20,14 +21,20 @@ Warrior Abilities:
   warrior.walk!
     Move in the given direction (forward by default).
 
+  warrior.rescue!
+    Rescue a captive from his chains (earning 20 points) in given direction (forward by default).
+
   warrior.feel
     Returns a Space for the given direction (forward by default).
 
-  warrior.rest!
-    Gain 10% of max health back, but do nothing more.
+  warrior.bind!
+    Binds a unit in given direction to keep him from moving (forward by default).
 
   warrior.health
     Returns an integer representing your health.
+
+  warrior.rest!
+    Gain 10% of max health back, but do nothing more.
 
   warrior.direction_of_stairs
     Returns the direction (:left, :right, :forward, :backward) the stairs are from your location.
