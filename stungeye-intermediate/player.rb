@@ -16,16 +16,16 @@ class Player
     @warrior = warrior
     spaces, enemies, captives = close_by(warrior)
 
-    if should_retreat?
+    if should_retreat?(enemies)
       walk! retreat_direction
     elsif enemies.count > 1
       bind! enemies.first
     elsif enemies.count > 0
       attack! enemies.first
-    elsif captives.count > 0
-      attack! captives.first
     elsif should_rest?      
       rest!
+    elsif captives.count > 0
+      rescue! captives.first
     else 
       walk! direction_of_stairs
       @previous_steps << direction_of_stairs
@@ -46,8 +46,8 @@ class Player
     health < 19 && health >= @health
   end
 
-  def should_retreat?
-    health < 10 && health < @health
+  def should_retreat?(enemies)
+    health < 10 && health < @health && enemies.count > 0
   end
 
   def close_by(warrior)
