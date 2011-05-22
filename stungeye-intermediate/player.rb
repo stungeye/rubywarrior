@@ -5,40 +5,42 @@ class Player
                         :left     => :right,
                         :right    => :left }
 
+  [:enemies, :captives, :ticking_captives, :empties].each do |s|
+    define_method("close_#{s}")  { feel_and_identify[s] }
+    define_method("close_#{s}?") { feel_and_identify[s].count > 0 }
+    define_method("far_#{s}")    { listen_and_identify[s] }
+    define_method("far_#{s}?")   { listen_and_identify[s].count > 0 }
+  end
+
   def initialize 
     @previous_steps = []
-    @memory = {}
     @health = 20
   end
 
   def play_turn(warrior)
     @warrior = warrior
 
-    all_enemies, all_captives = listen_and_identify
-    enemies, captives, empties = feel_and_identify
-
-puts "Empties:"
-puts empties
-
-    if should_retreat?(enemies)
+    if should_retreat?
       walk! retreat_direction
-    elsif enemies.count > 1
-      bind! direction_of(enemies.first)
-    elsif enemies.count > 0
-      attack! direction_of(enemies.first)
+    elsif close_enemies.count > 1
+      bind! direction_of(close_enemies.first)
+    elsif close_enemies?
+      attack! direction_of(close_enemies.first)
     elsif should_rest?      
       rest!
-    elsif captives.count > 0
-      rescue! direction_of(captives.first)
+    elsif close_captives?
+      rescue! direction_of(close_captives.first)
     else 
-      if all_captives.count > 0
-        d = direction_of(all_captives.first)
-      elsif all_enemies.count > 0
-        d = direction_of(all_enemies.first)
+      if far_ticking_captives?
+        d = direction_of(far_ticking_captives.first)
+      elsif far_captives?
+        d = direction_of(far_captives.first)
+      elsif far_enemies?
+        d = direction_of(far_enemies.first)
       else
         d = direction_of_stairs
       end
-      if feel(d).stairs? && (all_captives.count > 0 || all_enemies.count > 0)
+      if feel(d).stairs? && (far_captives? || far_enemies?)
         d = direction_of(empties.first)
       end
       walk! d
@@ -60,8 +62,8 @@ puts empties
     health < 19 && health >= @health
   end
 
-  def should_retreat?(enemies)
-    health < 10 && health < @health && enemies.count > 0
+  def should_retreat?
+    health < 10 && health < @health && close_enemies?
   end
 
   def listen_and_identify
@@ -79,13 +81,18 @@ puts empties
   def identify(spaces)
     enemies = []
     captives = []
+    ticking_captives = []
     empties = []
     spaces.each do |space|
       enemies << space  if space.enemy?
-      captives << space if space.captive?
+      captives << space if space.captive? && !space.ticking?
+      ticking_captives << space if space.captive? && space.ticking?
       empties << space  if space.empty? && !space.stairs?
     end
-    [enemies, captives, empties]
+    { :enemies          => enemies, 
+      :captives         => captives, 
+      :ticking_captives => ticking_captives,
+      :empties          => empties }
   end
 
   def method_missing(m, *args)
