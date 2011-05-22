@@ -14,6 +14,7 @@ class Player
   def play_turn(warrior)
     @warrior = warrior
 
+    all_enemies, all_captives = listen_and_identify
     enemies, captives = feel_and_identify
 
     if should_retreat?(enemies)
@@ -27,8 +28,15 @@ class Player
     elsif captives.count > 0
       rescue! direction_of captives.first
     else 
-      walk! direction_of_stairs
-      @previous_steps << direction_of_stairs
+      if all_captives.count > 0
+        d = direction_of all_captives.first
+      elsif all_enemies.count > 0
+        d = direction_of all_enemies.first
+      else
+        d = direction_of_stairs
+      end
+      walk! d
+      @previous_steps << d
     end
 
     remember_health
@@ -48,6 +56,10 @@ class Player
 
   def should_retreat?(enemies)
     health < 10 && health < @health && enemies.count > 0
+  end
+
+  def listen_and_identify
+    identify(listen)
   end
 
   def feel_and_identify
