@@ -9,24 +9,23 @@ class Player
     @previous_steps = []
     @memory = {}
     @health = 20
-    @state = :saviour
   end
 
   def play_turn(warrior)
     @warrior = warrior
 
-    enemies, captives = close_by
+    enemies, captives = feel_and_identify
 
     if should_retreat?(enemies)
       walk! retreat_direction
     elsif enemies.count > 1
-      bind! enemies.first
+      bind! direction_of enemies.first
     elsif enemies.count > 0
-      attack! enemies.first
+      attack! direction_of enemies.first
     elsif should_rest?      
       rest!
     elsif captives.count > 0
-      rescue! captives.first
+      rescue! direction_of captives.first
     else 
       walk! direction_of_stairs
       @previous_steps << direction_of_stairs
@@ -51,12 +50,20 @@ class Player
     health < 10 && health < @health && enemies.count > 0
   end
 
-  def close_by
+  def feel_and_identify
+    identify(
+      DIRECTIONS.map do |d|
+        feel(d)
+      end
+    )
+  end
+
+  def identify(spaces)
     enemies = []
     captives = []
-    DIRECTIONS.each do |d|
-      enemies << d  if feel(d).enemy?
-      captives << d  if feel(d).captive?
+    spaces.each do |space|
+      enemies << space  if space.enemy?
+      captives << space if space.captive?
     end
     [enemies, captives]
   end
