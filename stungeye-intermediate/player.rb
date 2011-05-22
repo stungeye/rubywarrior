@@ -4,6 +4,11 @@ class Player
                         :backward => :forward,
                         :left     => :right,
                         :right    => :left }
+  STATES = [ :empathy, :rage, :adventure ]
+
+  STATES.each do |s|
+    define_method("#{s}?") { @state == s }
+  end
 
   [:enemies, :captives, :ticking_captives, :empties].each do |s|
     define_method("close_#{s}")  { feel_and_identify[s] }
@@ -15,43 +20,69 @@ class Player
   def initialize 
     @previous_steps = []
     @health = 20
+    @state = :empathy
   end
 
   def play_turn(warrior)
     @warrior = warrior
 
-    if should_retreat?
-      walk! retreat_direction
-    elsif close_enemies.count > 1
-      bind! direction_of(close_enemies.first)
-    elsif close_enemies?
-      attack! direction_of(close_enemies.first)
-    elsif should_rest?      
-      rest!
-    elsif close_captives?
-      rescue! direction_of(close_captives.first)
-    else 
-      if far_ticking_captives?
-        d = direction_of(far_ticking_captives.first)
-      elsif far_captives?
-        d = direction_of(far_captives.first)
-      elsif far_enemies?
-        d = direction_of(far_enemies.first)
+    if (far_ticking_captives? || far_captives?) 
+      @state = :empathy
+    else
+      @state = :rage
+    end
+
+    case
+    when empathy?
+      if close_ticking_captives?
+        rescue! direction_of(close_ticking_captives.first)
+      elsif close_captives? 
+        rescue! direction_of(close_captives.first)
       else
-        d = direction_of_stairs
+        if far_ticking_captives?
+          d = direction_of(far_ticking_captives.first)
+        elsif far_captives?
+          d = direction_of(far_captives.first)
+        end
+        if (feel(d).stairs? || feel(d).enemy?) && (far_ticking_captives? || far_captives?)
+          close_empties.each do |s|
+            if direction_of(s) != REVERSE_DIRECTION[@previous_steps.last]
+              d = direction_of(s)
+              break
+            end
+          end
+        end
+        walk! d
+        @previous_steps << d
       end
-      if feel(d).stairs? && (far_captives? || far_enemies?)
-        d = direction_of(empties.first)
+    when rage?
+      if should_retreat?
+        retreat!
+      elsif close_enemies.count > 1
+        bind! direction_of(close_enemies.first)
+      elsif close_enemies?
+        attack! direction_of(close_enemies.first)
+      elsif should_rest?      
+        rest!
+      else 
+        if far_enemies?
+          d = direction_of(far_enemies.first)
+        else
+          d = direction_of_stairs
+        end
+        if feel(d).stairs? && far_enemies?
+          d = direction_of(close_empties.first)
+        end
+        walk! d
+        @previous_steps << d
       end
-      walk! d
-      @previous_steps << d
     end
 
     remember_health
   end
 
-  def retreat_direction
-    REVERSE_DIRECTION[@previous_steps.pop]
+  def retreat!
+    walk! REVERSE_DIRECTION[@previous_steps.pop]
   end
 
   def remember_health
@@ -59,7 +90,7 @@ class Player
   end
 
   def should_rest?
-    health < 19 && health >= @health
+    health < 19 && health >= @health && far_enemies?
   end
 
   def should_retreat?
