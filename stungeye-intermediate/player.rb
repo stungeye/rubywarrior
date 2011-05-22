@@ -9,12 +9,13 @@ class Player
     @previous_steps = []
     @memory = {}
     @health = 20
+    @state = :saviour
   end
-
 
   def play_turn(warrior)
     @warrior = warrior
-    spaces, enemies, captives = close_by(warrior)
+
+    enemies, captives = close_by
 
     if should_retreat?(enemies)
       walk! retreat_direction
@@ -50,16 +51,14 @@ class Player
     health < 10 && health < @health && enemies.count > 0
   end
 
-  def close_by(warrior)
-    spaces = {}
+  def close_by
     enemies = []
     captives = []
-    DIRECTIONS.map do |d|
-      spaces[d] = warrior.feel(d)
-      enemies << d  if spaces[d].enemy?
-      captives << d  if spaces[d].captive?
+    DIRECTIONS.each do |d|
+      enemies << d  if feel(d).enemy?
+      captives << d  if feel(d).captive?
     end
-    [spaces, enemies, captives]
+    [enemies, captives]
   end
 
   def method_missing(m, *args)
